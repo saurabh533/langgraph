@@ -4,7 +4,6 @@ import torch
 import numpy as np
 from astrapy import DataAPIClient
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-from peft import PeftModel
 from sentence_transformers import SentenceTransformer
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate

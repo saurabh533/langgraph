@@ -1,7 +1,5 @@
 # streamlit_app.py
 import streamlit as st
-from dotenv import load_dotenv
-load_dotenv()
 
 # ── Load graph once (cached so it doesn't reload on every interaction) ────────
 @st.cache_resource

@@ -15,14 +15,15 @@ llm = ChatGroq(
 # 2. ROUTER
 # ─────────────────────────────────────────
 class RouteDecision(BaseModel):
-    destination: Literal["predictive_analytics", "general_query"]
+    destination: Literal["predictive_analytics", "general_query", "general"]
 
 #llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 router_chain = ChatPromptTemplate.from_messages([
     ("system", """Route the query:
 - 'predictive_analytics': forecasting, predictions, trends,"Relative_Compactness","Surface_Area","Wall_Area","Roof_Area","Overall_Height","Orientation","Glazing_Area","Glazing_Area_Distribution"
-- 'energy_domain_query': factual questions, explanations, domain knowledge, general energy information"""),
+- 'general_query': factual questions related to energy, explanations related to energy, domain knowledge or scheme related to energy, general energy information
+-- "general": If user is asking hello, hi, or just wants to talk or chat very general things with you"""),
     ("human", "{query}")
 ]) | llm.with_structured_output(RouteDecision)
 

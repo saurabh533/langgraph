@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph, START, END
 from nodes.router import query_router_node, route_decision
 from nodes.predictive import llm1_query_transformation, forecasting_ann_node, llm2_output_generation
 from nodes.rag import rag_retriever_node, phi3_finetuned_node
+from nodes.general import general_energydomain_llm
 
 class GraphState(TypedDict):
     query: str
@@ -23,18 +24,19 @@ def build_graph():
     g.add_node("llm2_output",         llm2_output_generation)
     g.add_node("rag_retriever",       rag_retriever_node)
     g.add_node("phi3_finetuned",      phi3_finetuned_node)
+    g.add_node("generalized_llm",     general_energydomain_llm)
 
     g.add_edge(START, "query_router")
     g.add_conditional_edges("query_router", route_decision, {
         "predictive_analytics": "llm1_transformation",
-        "general_query":        "rag_retriever",
+        "general_query":        "rag_retriever", "general": "generalized_llm"
     })
     g.add_edge("llm1_transformation", "forecasting_ann")       ########### 1st workflow branch
     g.add_edge("forecasting_ann",     "llm2_output")
     g.add_edge("llm2_output",         END)
     g.add_edge("rag_retriever",       "phi3_finetuned")        ########### 2nd workflow branch
     g.add_edge("phi3_finetuned",      END)
-
+    g.add_edge("generalized_llm", END)                         ########### 3nd workflow branch
     return g.compile()
 
 app = build_graph()

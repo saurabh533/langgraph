@@ -2,7 +2,7 @@
  
 A chatbot for energy-related questions that figures out *how* to answer you instead of just throwing everything at one model.
  
-Some questions are conversational, some need a quick numeric prediction, and some only make sense if you pull facts from actual documents. Cramming all of that into a single LLM call tends to give mediocre answers across the board. So this project uses a router (built with LangGraph) that looks at your question first and sends it to whichever workflow fits best — a general LLM, a trained ANN, or a RAG pipeline backed by a vector store.
+Some questions are conversational, some need a quick numeric prediction, and some only make sense if you pull facts from actual documents. Cramming all of that into a single LLM call tends to give mediocre answers across the board. So this project uses a router (built with LangGraph) that looks at your question first and sends it to whichever workflow fits best a general LLM, a trained ANN, or a RAG pipeline backed by a vector store.
  
 The front end is a simple Streamlit app, so you can just type and go.
  
@@ -10,9 +10,9 @@ The front end is a simple Streamlit app, so you can just type and go.
  
 The three paths handle very different kinds of questions:
  
-- **General LLM** — for open-ended or conversational stuff, like *"What are some cheap ways to cut my electricity bill?"*
-- **ANN model** — when you actually want a number back, like predicting next month's consumption.
-- **RAG + vector database** — when the answer should come from your own documents (reports, policies, datasets) rather than the model's general knowledge.
+- **General LLM** - for open-ended or conversational stuff, like *"What are some cheap ways to cut my electricity bill?"*
+- **ANN model** - when you actually want a number back, like predicting next month's consumption.
+- **RAG + vector database** - when the answer should come from your own documents (reports, policies, datasets) rather than the model's general knowledge.
 Routing keeps each part focused. The LLM doesn't try to do math it's bad at, and the ANN doesn't try to hold a conversation.
  
 ## What's in here

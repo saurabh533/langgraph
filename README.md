@@ -1,6 +1,6 @@
 # All-in-One Energy Solution Chatbot
  
-A chatbot for energy-related questions that figures out *how* to answer you instead of just throwing everything at one model.
+An AI-powered chatbot that provides information on energy schemes, predicts energy consumption and answers a wide range of general energy-related questions.
  
 Some questions are conversational, some need a quick numeric prediction, and some only make sense if you pull facts from actual documents. Cramming all of that into a single LLM call tends to give mediocre answers across the board. So this project uses a router (built with LangGraph) that looks at your question first and sends it to whichever workflow fits best a general LLM, a trained ANN, or a RAG pipeline backed by a vector store.
  
@@ -83,10 +83,7 @@ The router is the only piece that decides where things go, so adding a fourth wo
  
 Python, Streamlit, LangGraph, a small ANN for predictions, and a RAG setup on top of a vector database.
  
-## Notes
- 
-This was put together for learning and experimentation, so treat it as a starting point rather than something production-ready. A few things I'd still like to add: conversation memory between turns, a bit of evaluation to check how often the router picks the right path, and a Docker setup so it's easier to run.
- 
+
 ## License
  
 Free to use for educational and research purposes.

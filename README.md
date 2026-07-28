@@ -20,7 +20,7 @@ Routing keeps each part focused. The LLM doesn't try to do math it's bad at, and
 ```
 app.py            # the Streamlit app you actually run
 graph.py          # the LangGraph router + the three workflow nodes
-train_ann.py      # script to train the ANN model
+model.keras      # pretrained ANN model
 requirements.txt  # dependencies
 ```
  

@@ -29,8 +29,8 @@ requirements.txt  # dependencies
 You'll need Python 3.10+ and an API key for whatever LLM provider you're using.
  
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/<saurabh533>/<langgraph>.git
+cd <langgraph>
  
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate

@@ -65,19 +65,9 @@ Rename the variables to match whatever provider and vector store you settled on.
  
 ## How a query flows through it
  
-```
-User query
-   │
-   ▼
-LangGraph router  ──►  General LLM
-                  ──►  ANN model
-                  ──►  RAG + vector database
-   │
-   ▼
-Answer
-```
+![Workflow](https://raw.githubusercontent.com/saurabh533/images/main/workflow.png)
  
-The router is the only piece that decides where things go, so adding a fourth workflow later is mostly a matter of adding a node and a branch.
+The router is the only piece that decides where things go.
  
 ## Built with
  

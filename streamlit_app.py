@@ -8,8 +8,8 @@ def load_graph():
     return app
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(page_title="LangGraph Chatbot", page_icon="🤖", layout="centered")
-st.title("🤖 LangGraph Chatbot")
+st.set_page_config(page_title="LangGraph Chatbot", layout="centered")
+st.title(" LangGraph Chatbot")
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
@@ -40,19 +40,19 @@ if prompt := st.chat_input("Ask me anything…"):
         for step in graph.stream({"query": prompt}, stream_mode="updates"):
             for node_name, output in step.items():
 
-                # ✅ Capture FIRST node only
+                # Capture FIRST node only
                 if workflow_name is None:
                    workflow_name = output
 
-                # ✅ Capture final response (don't display yet)
+                # Capture final response (don't display yet)
                 if "final_response" in output:
                    final_result = output["final_response"]
        
-        # ✅ Show workflow FIRST
+        # Show workflow FIRST
         if workflow_name:
            st.markdown(f"**Workflow selected:** `{workflow_name['route']}`")
 
-        # ✅ Then show response
+        # Then show response
         if final_result:
            st.markdown(final_result)
         else:

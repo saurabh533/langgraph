@@ -31,7 +31,7 @@ steps:
       - '--cpu=2'
       - '--timeout=3600'
       - '--session-affinity'
-      - '--set-secrets=GROQ_API=GROQ_API:latest,ASTRA_DB_APPLICATION_TOKEN=ASTRA_DB_APPLICATION_TOKEN:latest,ASTRA_DB_API_ENDPOINT=ASTRA_DB_API_ENDPOINT:latest,ASTRA_COLLECTION=ASTRA_COLLECTION:latest'
+      - '--set-secrets=GROQ_API_KEY=GROQ_API_KEY:latest,ASTRA_DB_APPLICATION_TOKEN=ASTRA_DB_APPLICATION_TOKEN:latest,ASTRA_DB_API_ENDPOINT=ASTRA_DB_API_ENDPOINT:latest,ASTRA_COLLECTION=ASTRA_COLLECTION:latest'
 
 # Store the built image in the build record
 images:

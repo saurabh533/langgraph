@@ -1,0 +1,18 @@
+# cloudbuild.ci.yaml — CI pipeline (runs on pull request via trigger "ci-tri1")
+# Fast, cheap gate: checks that all Python files compile. No build, no deploy.
+# (This catches syntax errors before code reaches main — without the slow TF image build.)
+
+steps:
+  - name: 'python:3.11-slim'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "Syntax-checking all Python files..."
+        python -m compileall -q .
+        echo "OK — no syntax errors."
+
+timeout: 300s
+
+options:
+  logging: CLOUD_LOGGING_ONLY

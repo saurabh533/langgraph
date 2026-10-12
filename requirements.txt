@@ -9,7 +9,7 @@ langgraph
 langchain-core
 langchain-groq
 
-# TensorFlow / Keras (CPU only — no GPU on Railway)
+# TensorFlow / Keras (CPU only)
 tensorflow-cpu==2.19.0
 
 # HuggingFace Sentence Transformers
@@ -24,7 +24,7 @@ astrapy
 # SHAP
 shap==0.51.0
 
-# Data
+# Data (DOWNGRADED TO ALLOW NUMPY 1.26.4 COMPATIBILITY)
 numpy==1.26.4
-pandas==3.0.2
-scikit-learn==1.8.0
+pandas==2.2.3
+scikit-learn==1.5.2

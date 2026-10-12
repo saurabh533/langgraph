@@ -44,8 +44,8 @@ embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 # ── 4. Groq LLM (replacing Phi-3) ────────────────────────────────────────────
 print("[GROQ] Initialising Groq LLM...")
 groq_llm = ChatGroq(
-    model="llama-3.1-8b-instant",       # fast + free tier available
-    # model="llama-3.3-70b-versatile",  # swap for better quality if needed
+    #model="llama-3.1-8b-instant",       # fast + free tier available
+    model="openai/gpt-oss-120b",  # swap for better quality if needed
     temperature=0,
     api_key=os.environ["GROQ_API_KEY"],
 )

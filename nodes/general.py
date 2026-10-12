@@ -3,7 +3,7 @@ from langchain_groq import ChatGroq
 import os
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",  # or "mixtral-8x7b-32768"
+    model="openai/gpt-oss-120b",  # or "mixtral-8x7b-32768"
     api_key=os.getenv("GROQ_API_KEY"),
     temperature=0.7
 )

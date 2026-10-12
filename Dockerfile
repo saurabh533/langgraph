@@ -1,7 +1,7 @@
-# 1. Force the image to always be built as amd64 (Fixes segmentation fault on Apple Silicon Mac builds)
+# 1. Force the image to always be built as amd64
 FROM --platform=linux/amd64 python:3.11-slim
 
-# System deps needed by TensorFlow, SHAP (llvm), sentence-transformers, and pandas/sklearn builds
+# System deps needed by TensorFlow, SHAP, sentence-transformers, and pandas/sklearn
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
@@ -11,27 +11,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Disable experimental TensorFlow optimizations that can cause segfaults in virtualized instances
+# Disable experimental TensorFlow optimizations that can cause segfaults
 ENV TF_ENABLE_ONEDNN_OPTS=0
 
-# Install Python deps first (better Docker layer caching)
+# Install Python deps first
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
-# Pre-download HuggingFace model cache into the image so cold starts don't have to hit the internet.
-ENV HF_HOME=/app/.cache/huggingface
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
+# COMMENTED OUT TO PREVENT CLOUD BUILD TIMEOUT (downloads will happen at runtime instead)
+# ENV HF_HOME=/app/.cache/huggingface
+# RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
 
 # Copy the rest of the app
 COPY . .
 
-# Cloud Run injects $PORT (defaults to 8080). Streamlit must bind to 0.0.0.0.
+# Cloud Run injects $PORT (defaults to 8080)
 ENV PORT=8080
 EXPOSE 8080
 
-# Streamlit needs headless mode and CORS off for Cloud Run's proxy
-# 3. Added 'exec' to ensure Streamlit receives OS shutdown signals directly
+# Streamlit needs headless mode and CORS off
 CMD exec streamlit run streamlit_app.py \
     --server.port=${PORT} \
     --server.address=0.0.0.0 \

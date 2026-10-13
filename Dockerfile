@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
 # COMMENTED OUT TO PREVENT CLOUD BUILD TIMEOUT (downloads will happen at runtime instead)
-# ENV HF_HOME=/app/.cache/huggingface
-# RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
+ENV HF_HOME=/app/.cache/huggingface
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
 
 # Copy the rest of the app
 COPY . .

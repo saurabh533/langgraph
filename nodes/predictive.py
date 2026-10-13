@@ -69,21 +69,23 @@ llm = ChatGroq(
 # ─────────────────────────────────────────
 
 llm1_chain = ChatPromptTemplate.from_messages([
-    ("system", """You are a feature extraction assistant for an energy efficiency ANN model.
-Extract exactly these 8 building features from the user query in order:
-    I am showing you example user input 
-- Relative_Compactness     (e.g. 0.62 – 0.98)
-- Surface_Area             (e.g. 514.5 – 808.5 m²)
-- Wall_Area                (e.g. 245.0 – 416.5 m²)
-- Roof_Area                (e.g. 110.25 – 220.5 m²)
-- Overall_Height           (e.g. 3.5 or 7.0 m)
-- Orientation              (e.g. 2, 3, 4, or 5)
-- Glazing_Area             (e.g. 0.0 – 0.4)
-- Glazing_Area_Distribution(e.g. 0, 1, 2, 3, 4, or 5)
+  ("system", """You are a feature extraction assistant for an energy efficiency ANN model.
+Extract exactly these 8 building features from the user query.
 
-Output only the list of 8 values, in this format:[0.764, 671.7, 318.5, 176.6, 5.25, 3.5, 0.234, 2.812]"""),
-    ("human", "{query}")
-]) | llm.with_structured_output(EnergyFeatures)
+Return a JSON object with EXACTLY these keys (all numbers, no lists, no arrays):
+- Relative_Compactness         (e.g. 0.62 – 0.98)
+- Surface_Area                 (m², e.g. 514.5 – 808.5)
+- Wall_Area                    (m², e.g. 245.0 – 416.5)
+- Roof_Area                    (m², e.g. 110.25 – 220.5)
+- Overall_Height               (m, e.g. 3.5 or 7.0)
+- Orientation                  (2, 3, 4, or 5)
+- Glazing_Area                 (e.g. 0.0 – 0.4)
+- Glazing_Area_Distribution    (0, 1, 2, 3, 4, or 5)
+
+Example output:
+{{"Relative_Compactness": 0.764, "Surface_Area": 671.7, "Wall_Area": 318.5, "Roof_Area": 176.6, "Overall_Height": 5.25, "Orientation": 3, "Glazing_Area": 0.234, "Glazing_Area_Distribution": 2}}"""),
+("human", "{query}")
+]) | llm.with_structured_output(EnergyFeatures, method="json_mode")
 
 
 
@@ -146,14 +148,35 @@ def forecasting_ann_node(state: dict) -> dict:
 
 # ── LLM 2 output generation ───────────────────────────────────────────────────
 llm2_chain = ChatPromptTemplate.from_messages([
-    ("system", """You are an energy efficiency expert. Explain the building's 
-predicted heating load and what physical features drove the result, 
-in plain language for an architect or building manager."""),
-    ("human", """Original query: {query}
+    ("system", """You are a friendly energy efficiency expert explaining a prediction to an \
+everyday person — a homeowner or someone curious about buildings, with no technical or \
+construction background.
+
+Your explanation must:
+- Start with one simple sentence stating the predicted heating load and whether that is \
+low, moderate, or high for a normal building.
+- Explain what heating load means in everyday terms: how much energy the building needs to \
+stay warm — so a higher number means it's harder (and more expensive) to heat, and a lower \
+number means it's cozier and cheaper to keep warm.
+- Go through each of the top 3 features in order. For each, say in plain words what it is \
+(using a simple comparison or picture where it helps) and why it makes heating easier or \
+harder — for example, "a bigger outer surface is like a cup with no lid: heat escapes faster."
+- End with 1–2 simple, practical takeaways an ordinary person could understand \
+(e.g. more windows, building shape, which way it faces) — as ideas to consider, not promises.
+
+Rules:
+- Use warm, everyday language, like explaining to a friend. Avoid jargon completely; if a \
+real-world term is unavoidable, explain it right away in the same sentence.
+- Use short sentences and simple analogies. Assume zero knowledge of construction or energy.
+- Do NOT invent feature values, rankings, or numbers you were not given. Explain only the \
+features and prediction provided.
+- Do NOT mention the machine-learning model, algorithms, or any math.
+- Keep it short and easy to read — a brief intro, the 3 points, and a friendly closing."""),
+("human", """Original query: {query}
 
 Predicted Heating Load: {prediction} kWh/m²
 
-Top 3 features influencing this prediction:
+Top 3 features influencing this prediction (most to least impactful):
 {top_features}
 
 Explain what the prediction means and why these features had the most impact.""")

@@ -1,56 +1,52 @@
-# nodes/rag.py
+# nodes/rag.py  — Firestore vector search + Vertex AI (gemini-embedding-001 @ 768)
+# RAG answer model: gemini-2.5-flash @ temperature 0 (deterministic retriever).
+# No AstraDB, no sentence-transformers, no torch. Auth via the service account.
 import os
-import torch
-import numpy as np
-from astrapy import DataAPIClient
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-from sentence_transformers import SentenceTransformer
-from langchain_groq import ChatGroq
+
+import vertexai
+from vertexai.language_models import TextEmbeddingModel, TextEmbeddingInput
+
+from google.cloud import firestore
+from google.cloud.firestore_v1.vector import Vector
+from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
+
+from langchain_google_vertexai import ChatVertexAI
 from langchain_core.prompts import ChatPromptTemplate
 
-# ── 1. AstraDB client via astrapy ─────────────────────────────────────────────
-client = DataAPIClient(os.environ["ASTRA_DB_APPLICATION_TOKEN"])
-db = client.get_database_by_api_endpoint(os.environ["ASTRA_DB_API_ENDPOINT"])
-collection = db.get_collection(os.environ["ASTRA_COLLECTION"])
+# ── Config ────────────────────────────────────────────────────────────────────
+PROJECT_ID           = os.environ.get("GOOGLE_CLOUD_PROJECT")
+LOCATION             = os.environ.get("GCP_LOCATION", "us-central1")
+FIRESTORE_COLLECTION = os.environ.get("FIRESTORE_COLLECTION", "energy_docs")
+FIRESTORE_DATABASE   = os.environ.get("FIRESTORE_DATABASE", "default")  # your DB's ID
+EMBED_MODEL          = "gemini-embedding-001"
+EMBED_DIM            = 768          # MUST match the Firestore vector index + ingestion
+VECTOR_FIELD         = "embedding"
+TOP_K                = 4
 
-# ── 2. Embedding model ────────────────────────────────────────────────────────
-print("[EMB] Loading embedding model...")
-embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# ── Vertex AI init + embedding model ──────────────────────────────────────────
+vertexai.init(project=PROJECT_ID, location=LOCATION)
+_embed_model = TextEmbeddingModel.from_pretrained(EMBED_MODEL)
 
-# ── 3. Phi-3 fine-tuned model (commented out — disk space) ───────────────────
-# MODEL_BASE = "microsoft/Phi-3-mini-4k-instruct"
-# PEFT_PATH  = "D:\\Chatbot-energy\\rags\\rags"
-# print("[PHI3] Loading base model...")
-# tokenizer = AutoTokenizer.from_pretrained(PEFT_PATH, trust_remote_code=True)
-# base_model = AutoModelForCausalLM.from_pretrained(
-#     MODEL_BASE,
-#     torch_dtype=torch.float16,
-#     device_map="auto",
-#     trust_remote_code=True,
-# )
-# print("[PHI3] Applying PEFT weights...")
-# model = PeftModel.from_pretrained(base_model, PEFT_PATH)
-# model.eval()
-# phi3_pipe = pipeline(
-#     "text-generation",
-#     model=model,
-#     tokenizer=tokenizer,
-#     max_new_tokens=512,
-#     do_sample=False,
-#     return_full_text=False,
-# )
-# print("[PHI3] Model ready.")
+def embed_query(text: str) -> list[float]:
+    # task_type RETRIEVAL_QUERY tells the model this is a search query (better recall).
+    inp = TextEmbeddingInput(text=text, task_type="RETRIEVAL_QUERY")
+    res = _embed_model.get_embeddings([inp], output_dimensionality=EMBED_DIM)
+    return res[0].values
 
-# ── 4. Groq LLM (replacing Phi-3) ────────────────────────────────────────────
-print("[GROQ] Initialising Groq LLM...")
-groq_llm = ChatGroq(
-    #model="llama-3.1-8b-instant",       # fast + free tier available
-    model="openai/gpt-oss-120b",  # swap for better quality if needed
+# ── Firestore client (no keys — uses the service account) ─────────────────────
+db = firestore.Client(project=PROJECT_ID, database=FIRESTORE_DATABASE)
+collection = db.collection(FIRESTORE_COLLECTION)
+
+# ── RAG answer model: deterministic ───────────────────────────────────────────
+print("[LLM] Initialising Vertex AI Gemini (RAG)...")
+rag_llm = ChatVertexAI(
+    model="gemini-2.5-flash",
     temperature=0,
-    api_key=os.environ["GROQ_API_KEY"],
+    project=PROJECT_ID,
+    location=LOCATION,
 )
 
-groq_chain = ChatPromptTemplate.from_messages([
+rag_chain = ChatPromptTemplate.from_messages([
     ("system", """You are an expert in the energy domain with deep knowledge of:
 - Smart grids and demand response
 - Energy efficiency and building energy systems
@@ -67,24 +63,22 @@ Keep answers concise, accurate, and technical where appropriate."""),
 Question: {query}
 
 Answer:""")
-]) | groq_llm
+]) | rag_llm
 
-print("[GROQ] Ready.")
-
-
-# ── 5. RAG retriever node ─────────────────────────────────────────────────────
+# ── RAG retriever node (Firestore vector search) ──────────────────────────────
 def rag_retriever_node(state: dict) -> dict:
-    print("[RAG] Embedding query...")
-    query_vector = embedder.encode(state["query"]).tolist()
+    print("[RAG] Embedding query (gemini-embedding-001)...")
+    query_vector = embed_query(state["query"])
 
-    print("[RAG] Querying AstraDB collection...")
-    results = collection.find(
-        sort={"$vector": query_vector},
-        limit=4,                                                       ####node 3 
-        projection={"text": 1, "source": 1, "$vector": 0},
-    )
+    print("[RAG] Querying Firestore vector search...")
+    snapshots = collection.find_nearest(
+        vector_field=VECTOR_FIELD,
+        query_vector=Vector(query_vector),
+        distance_measure=DistanceMeasure.COSINE,
+        limit=TOP_K,
+    ).get()
 
-    docs = list(results)
+    docs = [s.to_dict() for s in snapshots]
     if not docs:
         print("[RAG] No results found, proceeding with empty context.")
         context = "No relevant context found."
@@ -97,17 +91,13 @@ def rag_retriever_node(state: dict) -> dict:
 
     return {"rag_context": context}
 
-
-# ── 6. Groq inference node (replaces phi3_finetuned_node) ────────────────────
+# ── Generation node (same function name so graph.py is untouched) ─────────────
 def phi3_finetuned_node(state: dict) -> dict:
-    # kept the same function name so graph.py needs zero changes
-    print("[GROQ] Generating response...")
-
-    response = groq_chain.invoke({
+    print("[LLM] Generating response (Gemini)...")
+    response = rag_chain.invoke({
         "context": state["rag_context"],
-        "query": state["query"],                                   #############node 4 in 2nd workflow
+        "query": state["query"],
     })
-
     result = response.content.strip()
-    print(f"[GROQ] Done. ({len(result)} chars)")
+    print(f"[LLM] Done. ({len(result)} chars)")
     return {"final_response": result}

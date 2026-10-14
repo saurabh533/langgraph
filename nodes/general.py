@@ -1,16 +1,19 @@
-# nodes/general_chat.py
-from langchain_groq import ChatGroq
+# nodes/general.py  — small talk / general chat (balanced model: gemini-2.5-flash)
 import os
+from langchain_google_vertexai import ChatVertexAI
 
-llm = ChatGroq(
-    model="openai/gpt-oss-120b",  # or "mixtral-8x7b-32768"
-    api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.7
+PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
+LOCATION   = os.environ.get("GCP_LOCATION", "us-central1")
+
+llm = ChatVertexAI(
+    model="gemini-2.5-flash",
+    temperature=0.3,          # a little warmth for greetings/small talk
+    project=PROJECT_ID,
+    location=LOCATION,
 )
 
-def general_energydomain_llm(state: dict)-> dict:
+def general_energydomain_llm(state: dict) -> dict:
     query = state["query"]
-    
     response = llm.invoke([
         {
             "role": "system",
@@ -19,12 +22,8 @@ def general_energydomain_llm(state: dict)-> dict:
                 "You specialize in energy domain and predictive analytics topics. "
                 "For general greetings and small talk, respond warmly and briefly. "
                 "Always guide the user towards asking about energy or analytics if relevant."
-            )
+            ),
         },
-        {
-            "role": "user",
-            "content": query
-        }
+        {"role": "user", "content": query},
     ])
-    
     return {"final_response": response.content}

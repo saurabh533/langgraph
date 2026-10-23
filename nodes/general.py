@@ -6,7 +6,7 @@ PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
 LOCATION   = os.environ.get("GCP_LOCATION", "us-central1")
 
 llm = ChatVertexAI(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     temperature=0.3,          # a little warmth for greetings/small talk
     project=PROJECT_ID,
     location=LOCATION,
